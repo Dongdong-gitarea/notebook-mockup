@@ -651,6 +651,12 @@ body::before{
 .practice-score.mid{background:linear-gradient(135deg,#FBBF24 0%,#F59E0B 100%);-webkit-background-clip:text;background-clip:text}
 .practice-score-suffix{font-size:18px;color:var(--muted);margin-left:4px;font-weight:500}
 .practice-comment{font-size:15px;color:var(--ink);font-weight:500;margin-bottom:14px}
+.practice-recorded{
+  display:none;align-items:center;justify-content:center;gap:8px;
+  font-size:15px;color:var(--ink);font-weight:500;margin-bottom:14px;
+}
+.practice-recorded .icon{font-size:16px;color:var(--accent)}
+.practice-recorded.show{display:inline-flex}
 .practice-transcript{
   font-size:13px;color:var(--muted-2);
   padding:10px 14px;background:var(--surface);border-radius:10px;margin-bottom:18px;
@@ -864,7 +870,8 @@ body::before{
       <div class="practice-status" id="practiceStatus">Tap to record</div>
     </div>
     <div class="practice-result" id="practiceResult">
-      <div><span class="practice-score" id="practiceScore">0</span><span class="practice-score-suffix">%</span></div>
+      <div id="practiceScoreBlock"><span class="practice-score" id="practiceScore">0</span><span class="practice-score-suffix">%</span></div>
+      <div class="practice-recorded" id="practiceRecorded"><span class="icon"><i data-lucide="mic"></i></span><span>Recorded</span></div>
       <div class="practice-comment" id="practiceComment"></div>
       <div class="practice-transcript" id="practiceTranscript"></div>
       <div class="practice-audio-row">
@@ -1220,6 +1227,10 @@ function openPractice(en, ipa){
   document.getElementById('practiceEn').textContent = en;
   document.getElementById('practiceIpa').textContent = ipa || '';
   document.getElementById('practiceResult').classList.remove('show');
+  document.getElementById('practiceScoreBlock').style.display = '';
+  document.getElementById('practiceComment').style.display = '';
+  document.getElementById('practiceTranscript').style.display = '';
+  document.getElementById('practiceRecorded').classList.remove('show');
   document.getElementById('practiceStatus').textContent = 'Tap to record';
   document.getElementById('practiceMic').classList.remove('recording');
   document.getElementById('practiceMic').innerHTML = '<i data-lucide="mic"></i>';
@@ -1262,9 +1273,15 @@ async function practiceRecord(){
     return;
   }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { toast('Voice recognition not supported (try Chrome / Safari)'); return; }
+  const hasMR = typeof MediaRecorder !== 'undefined'
+    && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function';
 
-  // 1. 取 mic stream 給 MediaRecorder（要求權限）
+  if (!SR && !hasMR) {
+    toast('Recording not supported on this browser');
+    return;
+  }
+
+  // 1. 取 mic stream（兩種路徑都需要）
   try {
     practiceAudioStream = await navigator.mediaDevices.getUserMedia({audio: true});
   } catch (e) {
@@ -1272,61 +1289,85 @@ async function practiceRecord(){
     return;
   }
 
-  // 2. MediaRecorder 開始錄音檔
+  // 2. MediaRecorder 錄音檔（iOS Safari 14.5+ 也支援）
   const chunks = [];
-  try {
-    practiceMediaRecorder = new MediaRecorder(practiceAudioStream);
-    practiceMediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-    practiceMediaRecorder.onstop = () => {
-      if (chunks.length) {
-        practiceAudioBlob = new Blob(chunks, {type: practiceMediaRecorder.mimeType || 'audio/webm'});
-        practiceAudioBlob._url = URL.createObjectURL(practiceAudioBlob);
+  let mrStarted = false;
+  if (hasMR) {
+    try {
+      practiceMediaRecorder = new MediaRecorder(practiceAudioStream);
+      practiceMediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      practiceMediaRecorder.onstop = () => {
+        if (chunks.length) {
+          practiceAudioBlob = new Blob(chunks, {type: practiceMediaRecorder.mimeType || 'audio/webm'});
+          practiceAudioBlob._url = URL.createObjectURL(practiceAudioBlob);
+        }
+        if (practiceAudioStream) {
+          practiceAudioStream.getTracks().forEach(t => t.stop());
+          practiceAudioStream = null;
+        }
+        // 沒 SR 時，由 MediaRecorder.onstop 負責收尾 + 顯示結果
+        if (!SR) {
+          practiceIsRecording = false;
+          document.getElementById('practiceMic').classList.remove('recording');
+          document.getElementById('practiceMic').innerHTML = '<i data-lucide="mic"></i>';
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+          showPracticeResult(null);
+        }
+      };
+      practiceMediaRecorder.start();
+      mrStarted = true;
+    } catch (e) {
+      console.warn('MediaRecorder failed:', e);
+      // 沒 SR 又沒 MediaRecorder：徹底沒戲
+      if (!SR) {
+        if (practiceAudioStream) { practiceAudioStream.getTracks().forEach(t => t.stop()); practiceAudioStream = null; }
+        toast('Recording failed on this browser');
+        return;
       }
-      if (practiceAudioStream) {
-        practiceAudioStream.getTracks().forEach(t => t.stop());
-        practiceAudioStream = null;
-      }
-    };
-    practiceMediaRecorder.start();
-  } catch (e) {
-    console.warn('MediaRecorder failed:', e);
-    // 即使 MediaRecorder 失敗也能繼續用 SpeechRecognition
+      // 有 SR 就照舊只跑 SR
+    }
   }
 
-  // 3. SpeechRecognition 同時跑（負責轉文字評分）
-  practiceRecognition = new SR();
-  practiceRecognition.lang = 'en-US';
-  practiceRecognition.interimResults = false;
-  practiceRecognition.continuous = false;
-  practiceRecognition.onresult = (e) => {
-    const transcript = e.results[0][0].transcript;
-    // 等 MediaRecorder onstop 跑完才有 blob
-    setTimeout(() => showPracticeResult(transcript), 100);
-  };
-  practiceRecognition.onerror = (e) => {
-    if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
-      try { practiceMediaRecorder.stop(); } catch(_){}
-    }
-    practiceIsRecording = false;
-    document.getElementById('practiceMic').classList.remove('recording');
-    document.getElementById('practiceMic').innerHTML = '<i data-lucide="mic"></i>';
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-    document.getElementById('practiceStatus').textContent = e.error === 'no-speech' ? "Didn't hear anything — try again" : 'Try again';
-  };
-  practiceRecognition.onend = () => {
-    if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
-      try { practiceMediaRecorder.stop(); } catch(_){}
-    }
-    practiceIsRecording = false;
-    document.getElementById('practiceMic').classList.remove('recording');
-    document.getElementById('practiceMic').innerHTML = '<i data-lucide="mic"></i>';
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-  };
-  practiceRecognition.start();
+  // 3. SpeechRecognition（負責轉文字評分）— iOS 沒這個 API，純錄音
+  if (SR) {
+    practiceRecognition = new SR();
+    practiceRecognition.lang = 'en-US';
+    practiceRecognition.interimResults = false;
+    practiceRecognition.continuous = false;
+    practiceRecognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      // 等 MediaRecorder onstop 跑完才有 blob
+      setTimeout(() => showPracticeResult(transcript), 100);
+    };
+    practiceRecognition.onerror = (e) => {
+      if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
+        try { practiceMediaRecorder.stop(); } catch(_){}
+      }
+      practiceIsRecording = false;
+      document.getElementById('practiceMic').classList.remove('recording');
+      document.getElementById('practiceMic').innerHTML = '<i data-lucide="mic"></i>';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      document.getElementById('practiceStatus').textContent = e.error === 'no-speech' ? "Didn't hear anything — try again" : 'Try again';
+    };
+    practiceRecognition.onend = () => {
+      if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
+        try { practiceMediaRecorder.stop(); } catch(_){}
+      }
+      practiceIsRecording = false;
+      document.getElementById('practiceMic').classList.remove('recording');
+      document.getElementById('practiceMic').innerHTML = '<i data-lucide="mic"></i>';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    };
+    practiceRecognition.start();
+  } else if (!mrStarted) {
+    // 不該到這 — 上面已 return
+    return;
+  }
+
   practiceIsRecording = true;
   document.getElementById('practiceMic').classList.add('recording');
   document.getElementById('practiceMic').innerHTML = '<i data-lucide="square"></i>';
-  document.getElementById('practiceStatus').textContent = 'Listening… speak now';
+  document.getElementById('practiceStatus').textContent = SR ? 'Listening… speak now' : 'Recording… tap to stop';
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -1373,21 +1414,41 @@ function playCompare(){
   speechSynthesis.speak(utt);
 }
 function showPracticeResult(transcript){
-  const score = scoreTexts(transcript, practiceTarget);
-  const scoreEl = document.getElementById('practiceScore');
-  scoreEl.textContent = score;
-  scoreEl.className = 'practice-score' + (score < 50 ? ' bad' : score < 80 ? ' mid' : '');
-  document.getElementById('practiceComment').textContent =
-    score >= 90 ? 'Excellent! Nailed it.' :
-    score >= 75 ? 'Pretty close — almost there.' :
-    score >= 50 ? 'Keep practicing — listen carefully.' :
-    'Try again — listen to the native pronunciation first.';
-  const diff = diffPronunciation(transcript, practiceTarget);
-  document.getElementById('practiceTranscript').innerHTML =
-    `<span class="label">You said</span><span class="said">${diff.saidHtml}</span>` +
-    `<span class="target"><span class="label">Target</span>${diff.targetHtml}</span>`;
+  const scoreBlock = document.getElementById('practiceScoreBlock');
+  const commentEl = document.getElementById('practiceComment');
+  const transcriptEl = document.getElementById('practiceTranscript');
+  const recordedEl = document.getElementById('practiceRecorded');
+
+  if (transcript === null) {
+    // iOS / 沒 SR：純錄音，沒辦法評分
+    scoreBlock.style.display = 'none';
+    commentEl.style.display = 'none';
+    transcriptEl.style.display = 'none';
+    recordedEl.classList.add('show');
+  } else {
+    scoreBlock.style.display = '';
+    commentEl.style.display = '';
+    transcriptEl.style.display = '';
+    recordedEl.classList.remove('show');
+
+    const score = scoreTexts(transcript, practiceTarget);
+    const scoreEl = document.getElementById('practiceScore');
+    scoreEl.textContent = score;
+    scoreEl.className = 'practice-score' + (score < 50 ? ' bad' : score < 80 ? ' mid' : '');
+    commentEl.textContent =
+      score >= 90 ? 'Excellent! Nailed it.' :
+      score >= 75 ? 'Pretty close — almost there.' :
+      score >= 50 ? 'Keep practicing — listen carefully.' :
+      'Try again — listen to the native pronunciation first.';
+    const diff = diffPronunciation(transcript, practiceTarget);
+    transcriptEl.innerHTML =
+      `<span class="label">You said</span><span class="said">${diff.saidHtml}</span>` +
+      `<span class="target"><span class="label">Target</span>${diff.targetHtml}</span>`;
+  }
+
   document.getElementById('practiceResult').classList.add('show');
   document.getElementById('practiceStatus').textContent = 'Tap to try again';
+  if (typeof lucide !== 'undefined') lucide.createIcons();
   // 顯示「You」「Compare」按鈕（如果有錄到音）
   // 給 MediaRecorder.onstop 多一點時間製作 blob
   setTimeout(() => {
