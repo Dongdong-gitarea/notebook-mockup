@@ -431,8 +431,8 @@ button svg, button i[data-lucide]{pointer-events:none}
   padding:2px 8px;border-radius:4px;margin-bottom:8px;text-transform:uppercase;
   border:1px solid rgba(34,211,238,.2);
 }
-.word-pop-actions{display:flex;gap:8px}
-.word-pop-actions .btn-action{flex:1;justify-content:center}
+.word-pop-actions{display:flex;gap:8px;flex-wrap:wrap}
+.word-pop-actions .btn-action{flex:1;min-width:80px;justify-content:center}
 .btn-action{
   background:var(--surface);border:1px solid var(--border);border-radius:50px;padding:8px 14px;
   font-family:inherit;font-size:12px;font-weight:500;color:var(--ink-2);
@@ -1230,8 +1230,13 @@ async function translateViaAPI(text){
     const res = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    const en = (data.responseData && data.responseData.translatedText) || '';
+    let en = (data.responseData && data.responseData.translatedText) || '';
     if (!en) throw new Error('Empty translation');
+    // MyMemory sometimes returns "39: text" (internal DB match ID) — strip it
+    en = en.replace(/^\d+[:.]\s*/, '');
+    // Decode HTML entities (MyMemory sometimes returns &#39; etc.)
+    en = en.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+           .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
     return { en, ipa: '' };
   } finally {
     clearTimeout(timer);
@@ -2191,7 +2196,17 @@ function toast(msg){
 
 // ── YouGlish ──
 let ygWidget = null;
-let ygScriptLoaded = false;
+let ygYG = null;          // stored YG namespace after API ready
+let ygPendingQuery = null;
+
+// Called by YouGlish script when ready — must be global
+window.onYouglishAPIReady = function(YG){
+  ygYG = YG;
+  if (ygPendingQuery) {
+    ygCreate(ygPendingQuery);
+    ygPendingQuery = null;
+  }
+};
 
 function openYouGlish(query){
   const clean = query.replace(/['"]/g,'').trim();
@@ -2199,34 +2214,38 @@ function openYouGlish(query){
   document.getElementById('ygContainer').innerHTML = '<div class="yg-loading">載入中…</div>';
   document.getElementById('ygModal').classList.add('open');
   closeWordPopup();
-
-  if (!ygScriptLoaded) {
-    const s = document.createElement('script');
-    s.src = 'https://youglish.com/api/1/youglish.js';
-    s.async = true;
-    s.onload = () => { ygScriptLoaded = true; ygInit(clean); };
-    document.head.appendChild(s);
-  } else {
-    ygInit(clean);
-  }
+  ygCreate(clean);
 }
 
-function ygInit(query){
+function ygCreate(query){
+  if (ygWidget) { try { ygWidget.destroy && ygWidget.destroy(); } catch(_){} ygWidget = null; }
+
+  if (!ygYG) {
+    // Script not loaded yet — queue and load
+    ygPendingQuery = query;
+    if (!document.querySelector('script[src*="youglish"]')) {
+      const s = document.createElement('script');
+      s.src = 'https://youglish.com/api/1/youglish.js';
+      document.head.appendChild(s);
+    }
+    return;
+  }
+
   document.getElementById('ygContainer').innerHTML = '<div id="ygPlayer"></div>';
   try {
-    ygWidget = new YG.Widget('ygPlayer', {
+    ygWidget = new ygYG.Widget('ygPlayer', {
       width: '100%',
       components: 9,
       events: {
         onFetchDone: (e) => {
           if (e.totalResult === 0) {
             document.getElementById('ygContainer').innerHTML =
-              '<div class="yg-loading">找不到結果 — 試試其他單字</div>';
+              `<div class="yg-loading">找不到結果。<br><a href="https://youglish.com/pronounce/${encodeURIComponent(query)}/english" target="_blank" style="color:var(--accent)">在 YouGlish 開啟 ↗</a></div>`;
           }
         },
         onError: () => {
           document.getElementById('ygContainer').innerHTML =
-            '<div class="yg-loading">載入失敗，請稍後再試</div>';
+            `<div class="yg-loading">載入失敗。<br><a href="https://youglish.com/pronounce/${encodeURIComponent(query)}/english" target="_blank" style="color:var(--accent)">在 YouGlish 開啟 ↗</a></div>`;
         }
       }
     });
