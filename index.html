@@ -155,6 +155,16 @@ body::before{
   box-shadow:inset 0 0 0 1px var(--border-strong);
 }
 .theme-btn .icon{font-size:14px}
+.speed-row{display:flex;align-items:center;gap:10px;margin-top:2px}
+.speed-row input[type=range]{
+  flex:1;-webkit-appearance:none;appearance:none;height:4px;
+  border-radius:2px;background:var(--border-strong);outline:none;cursor:pointer;
+}
+.speed-row input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--accent);cursor:pointer;
+}
+.speed-label{font-size:12px;color:var(--accent);font-weight:700;min-width:30px;text-align:right}
 
 .demo-tag{
   position:fixed;top:14px;left:50%;transform:translateX(-50%);
@@ -800,6 +810,13 @@ button svg, button i[data-lucide]{pointer-events:none}
         <div class="setting-group">
           <div class="setting-label"><span class="icon"><i data-lucide="audio-lines"></i></span><span>Voice</span></div>
           <select id="voiceSelect" class="voice-select" onchange="onVoiceChange()"></select>
+        </div>
+        <div class="setting-group">
+          <div class="setting-label"><span class="icon"><i data-lucide="gauge"></i></span><span>Speed</span></div>
+          <div class="speed-row">
+            <input type="range" id="speedSlider" min="0.4" max="1.2" step="0.1" value="0.9" oninput="onSpeedChange(this.value)">
+            <span class="speed-label" id="speedLabel">0.9×</span>
+          </div>
         </div>
         <div class="setting-group">
           <div class="setting-label"><span class="icon"><i data-lucide="palette"></i></span><span>Appearance</span></div>
@@ -1679,13 +1696,22 @@ function onVoiceChange(){
 speechSynthesis.onvoiceschanged = loadVoices;
 loadVoices();
 
-function speak(text, rate=0.95){
+let playbackRate = parseFloat(localStorage.getItem('rl_speed') || '0.9');
+
+function onSpeedChange(val){
+  playbackRate = parseFloat(val);
+  localStorage.setItem('rl_speed', val);
+  document.getElementById('speedLabel').textContent = parseFloat(val).toFixed(1) + '×';
+}
+
+function speak(text, rate){
+  const r = rate !== undefined ? rate : playbackRate;
   const u = new SpeechSynthesisUtterance(text);
   const selected = document.getElementById('voiceSelect').value;
   const voice = allVoices.find(v => v.name === selected);
   if (voice) { u.voice = voice; u.lang = voice.lang; }
   else u.lang = 'en-US';
-  u.rate = rate;
+  u.rate = r;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
@@ -1917,6 +1943,11 @@ renderFilterTabs();
 updateBadges();
 updateCharCount();
 renderView();
+// Restore speed slider
+(function(){
+  const s = document.getElementById('speedSlider');
+  if (s) { s.value = playbackRate; document.getElementById('speedLabel').textContent = playbackRate.toFixed(1) + '×'; }
+})();
 </script>
 <script>
 // Service worker disabled — causes blank screen on iOS subdirectory PWA
