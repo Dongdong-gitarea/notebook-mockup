@@ -1276,6 +1276,9 @@ async function practiceRecord(){
   const hasMR = typeof MediaRecorder !== 'undefined'
     && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function';
 
+  // DEBUG — 部署確認後移除
+  toast(`iOS:${isIOS} SR:${!!SR} MR:${hasMR}`);
+
   if (!SR && !hasMR) {
     toast('Recording not supported on this browser');
     return;
@@ -1338,6 +1341,7 @@ async function practiceRecord(){
     practiceRecognition.continuous = false;
     practiceRecognition.onresult = (e) => {
       const transcript = e.results[0][0].transcript;
+      toast('Got: ' + transcript.slice(0, 30));
       if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
         practiceMediaRecorder.stop();
         setTimeout(() => showPracticeResult(transcript), 300);
