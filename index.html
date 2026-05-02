@@ -721,19 +721,36 @@ button svg, button i[data-lucide]{pointer-events:none}
 .saved-actions{display:flex;gap:2px;flex-shrink:0}
 
 @media(max-width:600px){
-  .wrap{padding:16px 14px 240px}
-  .empty-hero{padding:32px 8px 24px}
-  .empty-hero h1{font-size:28px}
-  .empty-hero p{font-size:14px}
-  .feed-card{padding:16px 18px 14px;border-radius:16px}
-  .feed-card-en{font-size:18px}
-  .demo-tag{top:54px;right:14px;left:14px;text-align:center;transform:none;justify-content:center}
+  .wrap{padding:16px 14px 220px}
+  .empty-hero{padding:24px 8px 16px}
+  .empty-hero h1{font-size:24px}
+  .empty-hero p{font-size:13px}
+  .feed-card{padding:14px 16px 12px;border-radius:16px;gap:8px}
+  .feed-card-zh{font-size:13px}
+  .feed-card-en{font-size:17px;line-height:1.5}
+  .feed-card-ipa{font-size:11px}
+  .btn{padding:7px 13px;font-size:12px}
   .word-popup{min-width:240px;max-width:90vw}
   .settings-panel{width:calc(100vw - 32px);right:-8px}
   .topbar-icon{width:36px;height:36px;font-size:15px}
-  .bottom-bar{padding:20px 14px 12px}
-  .bottom-bar-inner{padding:14px 16px 12px;border-radius:20px}
-  .feed-section-label{font-size:18px}
+  .bottom-bar{padding:16px 12px 8px}
+  .bottom-bar-inner{padding:12px 14px 10px;border-radius:20px}
+  .bottom-input textarea{font-size:15px;min-height:38px}
+  .feed-section-label{font-size:17px}
+  /* Practice modal — bottom sheet on mobile */
+  .practice-modal{align-items:flex-end;padding:0}
+  .practice-modal-inner{
+    border-radius:24px 24px 0 0;max-height:88vh;
+    padding:24px 20px 32px;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom));
+  }
+  .practice-header{margin-bottom:16px}
+  .practice-en{font-size:20px;margin-bottom:8px}
+  .practice-result{padding:16px;margin-top:12px}
+  .practice-score{font-size:48px}
+  .practice-transcript{font-size:12px;padding:8px 12px}
+  .practice-audio-row{flex-wrap:wrap;gap:8px}
+  .practice-actions{margin-top:12px}
 }
 </style>
 </head>
@@ -837,11 +854,11 @@ button svg, button i[data-lucide]{pointer-events:none}
       <span class="char-count" id="charCount">0 / 500</span>
     </div>
     <div class="bottom-input">
-      <textarea id="input" placeholder="寫下你想說的中文 — 工作、日記、想法都行" oninput="updateCharCount();autoResize(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();translate()}"></textarea>
+      <textarea id="input" placeholder="寫下你想說的中文 — 工作、日記、想法都行" oninput="updateCharCount();autoResize(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doTranslate()}"></textarea>
       <button class="btn-mic" id="btnVoice" onclick="toggleVoice()" title="Voice input">
         <i data-lucide="mic"></i>
       </button>
-      <button class="btn-translate" id="btnTrans" onclick="translate()" title="Translate (Enter)">
+      <button class="btn-translate" id="btnTrans" onclick="doTranslate()" title="Translate (Enter)">
         <i data-lucide="arrow-up"></i>
       </button>
     </div>
@@ -1086,7 +1103,7 @@ function renderClickableWords(text){
 }
 
 // ── Translate ──
-async function translate(){
+async function doTranslate(){
   const text = document.getElementById('input').value.trim();
   if (!text) { toast('Please enter Chinese text first'); return; }
   const btn = document.getElementById('btnTrans');
@@ -1212,7 +1229,7 @@ function useExample(text){
   document.getElementById('input').value = text;
   updateCharCount();
   autoResize(document.getElementById('input'));
-  translate();
+  doTranslate();
 }
 
 // ── Practice mode ──
