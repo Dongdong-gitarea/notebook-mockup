@@ -467,6 +467,55 @@ button svg, button i[data-lucide]{pointer-events:none}
 }
 .section-divider .line{flex:1;height:1px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%)}
 
+/* ── Auto Play bar ── */
+.autoplay-bar{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:12px 16px;margin-bottom:14px;
+}
+.autoplay-controls{display:flex;align-items:center;gap:10px}
+.autoplay-btn{
+  width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent-deep),var(--accent));
+  color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px -2px rgba(59,130,246,.4);transition:all .15s;
+}
+.autoplay-btn:hover{transform:scale(1.06)}
+.autoplay-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.autoplay-info{flex:1;min-width:0}
+.autoplay-now{font-size:13px;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.autoplay-progress{font-size:11px;color:var(--muted);margin-top:2px}
+.autoplay-toggle{
+  background:transparent;border:none;color:var(--muted);cursor:pointer;
+  font-size:12px;font-family:inherit;font-weight:500;padding:4px 8px;border-radius:8px;
+  display:flex;align-items:center;gap:4px;transition:all .15s;flex-shrink:0;
+}
+.autoplay-toggle:hover{background:var(--surface-hover);color:var(--ink)}
+.autoplay-settings{
+  border-top:1px solid var(--border);margin-top:12px;padding-top:12px;
+  display:none;
+}
+.autoplay-settings.open{display:block}
+.ap-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.ap-row:last-child{margin-bottom:0}
+.ap-label{font-size:12px;color:var(--muted);width:88px;flex-shrink:0}
+.ap-row input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--border-strong);outline:none;cursor:pointer}
+.ap-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer}
+.ap-val{font-size:12px;color:var(--accent);font-weight:700;min-width:32px;text-align:right}
+.ap-toggle{display:flex;gap:4px}
+.ap-toggle button{
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  padding:5px 10px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;
+  font-family:inherit;transition:all .12s;
+}
+.ap-toggle button.active{background:rgba(96,165,250,.15);border-color:rgba(96,165,250,.4);color:var(--accent)}
+.autoplay-cur{
+  display:none;background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2);
+  border-radius:12px;padding:10px 14px;margin-top:10px;
+}
+.autoplay-cur.show{display:block}
+.autoplay-cur .cur-zh{font-size:13px;color:var(--muted);margin-bottom:4px}
+.autoplay-cur .cur-en{font-family:'Fraunces',serif;font-size:16px;color:var(--ink)}
+
 .filter-tabs{
   display:flex;gap:4px;margin-bottom:14px;padding:4px;
   background:var(--surface);border:1px solid var(--border);border-radius:14px;
@@ -730,6 +779,7 @@ button svg, button i[data-lucide]{pointer-events:none}
   display:flex;gap:14px;align-items:flex-start;transition:all .25s;
 }
 .saved-item:hover{background:var(--surface-hover);border-color:rgba(96,165,250,.3);transform:translateY(-2px)}
+.saved-item.ap-active{background:rgba(96,165,250,.08);border-color:rgba(96,165,250,.4);transform:translateY(-2px)}
 .saved-text{flex:1;min-width:0}
 .cat-badge{
   display:inline-flex;align-items:center;gap:4px;
@@ -859,6 +909,57 @@ button svg, button i[data-lucide]{pointer-events:none}
       <span class="label">My Sentences</span>
       <span class="count" id="sentenceCount">0</span>
       <div class="line"></div>
+    </div>
+    <!-- Auto Play bar -->
+    <div class="autoplay-bar" id="apBar">
+      <div class="autoplay-controls">
+        <button class="autoplay-btn" id="apBtn" onclick="apToggle()" title="Auto Play">
+          <i data-lucide="play"></i>
+        </button>
+        <div class="autoplay-info">
+          <div class="autoplay-now" id="apNow">Auto Play</div>
+          <div class="autoplay-progress" id="apProg">聽句子、開車用</div>
+        </div>
+        <button class="autoplay-toggle" onclick="apToggleSettings()">
+          <i data-lucide="sliders-horizontal"></i><span id="apSettingsLabel">設定</span>
+        </button>
+      </div>
+      <div class="autoplay-settings" id="apSettings">
+        <div class="ap-row">
+          <span class="ap-label">唸中文</span>
+          <div class="ap-toggle">
+            <button id="apZhOn" class="active" onclick="apSetZh(true)">開</button>
+            <button id="apZhOff" onclick="apSetZh(false)">關</button>
+          </div>
+        </div>
+        <div class="ap-row">
+          <span class="ap-label">英文重複</span>
+          <div class="ap-toggle">
+            <button id="apEn1" class="active" onclick="apSetEnRep(1)">1×</button>
+            <button id="apEn2" onclick="apSetEnRep(2)">2×</button>
+            <button id="apEn3" onclick="apSetEnRep(3)">3×</button>
+          </div>
+        </div>
+        <div class="ap-row">
+          <span class="ap-label">中文速度</span>
+          <input type="range" min="0.4" max="1.2" step="0.1" value="0.9" oninput="apSetRate('zh',this.value)" id="apZhRate">
+          <span class="ap-val" id="apZhRateVal">0.9×</span>
+        </div>
+        <div class="ap-row">
+          <span class="ap-label">英文速度</span>
+          <input type="range" min="0.4" max="1.2" step="0.1" value="0.9" oninput="apSetRate('en',this.value)" id="apEnRate">
+          <span class="ap-val" id="apEnRateVal">0.9×</span>
+        </div>
+        <div class="ap-row">
+          <span class="ap-label">間隔</span>
+          <input type="range" min="1" max="6" step="0.5" value="2" oninput="apSetGap(this.value)" id="apGap">
+          <span class="ap-val" id="apGapVal">2s</span>
+        </div>
+      </div>
+      <div class="autoplay-cur" id="apCur">
+        <div class="cur-zh" id="apCurZh"></div>
+        <div class="cur-en" id="apCurEn"></div>
+      </div>
     </div>
     <div class="filter-tabs" id="sentenceFilters"></div>
     <div id="sentenceList"></div>
@@ -1826,6 +1927,120 @@ function renderHistory(){
     </div>
   `).join('');
   if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// ── Auto Play ──
+const AP = {
+  playing: false,
+  idx: 0,
+  zh: true,
+  enRep: 1,
+  zhRate: 0.9,
+  enRate: 0.9,
+  gap: 2,
+  timer: null,
+  cancel: false
+};
+
+function apToggleSettings(){
+  const s = document.getElementById('apSettings');
+  s.classList.toggle('open');
+  document.getElementById('apSettingsLabel').textContent = s.classList.contains('open') ? '關閉' : '設定';
+}
+function apSetZh(v){ AP.zh = v; document.getElementById('apZhOn').classList.toggle('active',v); document.getElementById('apZhOff').classList.toggle('active',!v); }
+function apSetEnRep(n){ AP.enRep = n; [1,2,3].forEach(i=>document.getElementById('apEn'+i).classList.toggle('active',i===n)); }
+function apSetRate(lang,v){ const f=parseFloat(v); if(lang==='zh'){AP.zhRate=f;document.getElementById('apZhRateVal').textContent=f.toFixed(1)+'×';}else{AP.enRate=f;document.getElementById('apEnRateVal').textContent=f.toFixed(1)+'×';} }
+function apSetGap(v){ AP.gap=parseFloat(v); document.getElementById('apGapVal').textContent=parseFloat(v).toFixed(1).replace('.0','')+'s'; }
+
+function apSpeakPromise(text, rate, lang){
+  return new Promise(resolve => {
+    if (AP.cancel) { resolve(); return; }
+    const u = new SpeechSynthesisUtterance(text);
+    const selected = document.getElementById('voiceSelect').value;
+    const voice = allVoices.find(v => v.name === selected);
+    if (voice && lang === 'en') { u.voice = voice; u.lang = voice.lang; }
+    else if (lang === 'zh') { u.lang = 'zh-TW'; }
+    else u.lang = 'en-US';
+    u.rate = rate;
+    u.onend = resolve;
+    u.onerror = resolve;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  });
+}
+
+function apWait(sec){
+  return new Promise(resolve => {
+    if (AP.cancel) { resolve(); return; }
+    AP.timer = setTimeout(resolve, sec * 1000);
+  });
+}
+
+async function apRun(){
+  const all = loadSentences();
+  const arr = activeFilter === 'all' ? all : all.filter(x => x.category === activeFilter);
+  if (!arr.length) { apStop(); toast('No sentences to play'); return; }
+
+  while (AP.playing && AP.idx < arr.length) {
+    if (AP.cancel) break;
+    const item = arr[AP.idx];
+
+    // Update UI
+    document.getElementById('apNow').textContent = `${AP.idx + 1} / ${arr.length}`;
+    document.getElementById('apProg').textContent = item.zh;
+    document.getElementById('apCurZh').textContent = item.zh;
+    document.getElementById('apCurEn').textContent = item.en;
+    document.getElementById('apCur').classList.add('show');
+
+    // Highlight playing item
+    document.querySelectorAll('.saved-item').forEach((el,i) => el.classList.toggle('ap-active', i === AP.idx));
+
+    // Speak Chinese
+    if (AP.zh) {
+      await apSpeakPromise(item.zh, AP.zhRate, 'zh');
+      await apWait(0.4);
+    }
+    if (AP.cancel) break;
+
+    // Speak English N times
+    for (let r = 0; r < AP.enRep; r++) {
+      if (AP.cancel) break;
+      await apSpeakPromise(item.en, AP.enRate, 'en');
+      if (r < AP.enRep - 1) await apWait(0.6);
+    }
+    if (AP.cancel) break;
+
+    await apWait(AP.gap);
+    AP.idx++;
+  }
+
+  if (!AP.cancel) apStop(true);
+}
+
+function apToggle(){
+  if (AP.playing) { apStop(); return; }
+  AP.playing = true;
+  AP.cancel = false;
+  AP.idx = 0;
+  const btn = document.getElementById('apBtn');
+  btn.innerHTML = '<i data-lucide="pause"></i>';
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  document.getElementById('apNow').textContent = 'Playing…';
+  apRun();
+}
+
+function apStop(finished){
+  AP.playing = false;
+  AP.cancel = true;
+  speechSynthesis.cancel();
+  if (AP.timer) { clearTimeout(AP.timer); AP.timer = null; }
+  const btn = document.getElementById('apBtn');
+  btn.innerHTML = '<i data-lucide="play"></i>';
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  document.getElementById('apNow').textContent = finished ? '播放完畢' : 'Auto Play';
+  document.getElementById('apProg').textContent = finished ? '再按一次重播' : '聽句子、開車用';
+  document.getElementById('apCur').classList.remove('show');
+  document.querySelectorAll('.saved-item').forEach(el => el.classList.remove('ap-active'));
 }
 
 function renderSentences(){
