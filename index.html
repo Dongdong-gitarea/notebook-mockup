@@ -1350,6 +1350,7 @@ async function practiceRecord(){
       }
     };
     practiceRecognition.onerror = (e) => {
+      toast('SR error: ' + e.error);
       if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
         try { practiceMediaRecorder.stop(); } catch(_){}
       }
@@ -1357,9 +1358,10 @@ async function practiceRecord(){
       document.getElementById('practiceMic').classList.remove('recording');
       document.getElementById('practiceMic').innerHTML = '<i data-lucide="mic"></i>';
       if (typeof lucide !== 'undefined') lucide.createIcons();
-      document.getElementById('practiceStatus').textContent = e.error === 'no-speech' ? "Didn't hear anything — try again" : 'Try again';
+      document.getElementById('practiceStatus').textContent = e.error === 'no-speech' ? "Didn't hear anything — try again" : 'Error: ' + e.error;
     };
     practiceRecognition.onend = () => {
+      toast('SR ended (no result)');
       if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
         try { practiceMediaRecorder.stop(); } catch(_){}
       }
