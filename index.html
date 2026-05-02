@@ -918,7 +918,7 @@ button svg, button i[data-lucide]{pointer-events:none}
         </button>
         <div class="autoplay-info">
           <div class="autoplay-now" id="apNow">Auto Play</div>
-          <div class="autoplay-progress" id="apProg">聽句子、開車用</div>
+          <div class="autoplay-progress" id="apProg">中英交替朗讀，隨時沈浸複習</div>
         </div>
         <button class="autoplay-toggle" onclick="apToggleSettings()">
           <i data-lucide="sliders-horizontal"></i><span id="apSettingsLabel">設定</span>
@@ -2038,7 +2038,7 @@ function apStop(finished){
   btn.innerHTML = '<i data-lucide="play"></i>';
   if (typeof lucide !== 'undefined') lucide.createIcons();
   document.getElementById('apNow').textContent = finished ? '播放完畢' : 'Auto Play';
-  document.getElementById('apProg').textContent = finished ? '再按一次重播' : '聽句子、開車用';
+  document.getElementById('apProg').textContent = finished ? '再按一次重播' : '中英交替朗讀，隨時沈浸複習';
   document.getElementById('apCur').classList.remove('show');
   document.querySelectorAll('.saved-item').forEach(el => el.classList.remove('ap-active'));
 }
