@@ -1919,9 +1919,12 @@ updateCharCount();
 renderView();
 </script>
 <script>
+// Service worker disabled — causes blank screen on iOS subdirectory PWA
+// Re-enable when moving to custom domain (notebook.reelish.app)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/notebook-mockup/sw.js')
-    .catch(e => console.warn('SW reg failed:', e));
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
 }
 </script>
 </body>
