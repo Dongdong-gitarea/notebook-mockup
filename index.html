@@ -602,6 +602,31 @@ button svg, button i[data-lucide]{pointer-events:none}
 .toast .icon{color:var(--accent);font-size:14px}
 
 /* Practice modal */
+/* ── YouGlish modal ── */
+.yg-modal{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,1,6,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;
+}
+.yg-modal.open{display:flex}
+.yg-inner{
+  width:100%;max-width:680px;
+  background:var(--bg-2);border:1px solid var(--border-strong);border-radius:20px;
+  padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.6);
+}
+.yg-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.yg-word{font-family:'Fraunces',serif;font-size:20px;font-weight:500;color:var(--ink);flex:1}
+.yg-close{
+  width:34px;height:34px;border-radius:50%;border:none;background:var(--surface);
+  color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:15px;transition:all .15s;flex-shrink:0;
+}
+.yg-close:hover{background:var(--surface-hover);color:var(--ink)}
+.yg-hint{font-size:12px;color:var(--muted);margin-bottom:12px}
+#ygContainer{width:100%;border-radius:12px;overflow:hidden;min-height:200px}
+#ygContainer iframe{border-radius:12px}
+.yg-loading{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+
 .practice-modal{
   position:fixed;inset:0;z-index:200;
   background:rgba(0,1,6,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
@@ -1058,9 +1083,24 @@ button svg, button i[data-lucide]{pointer-events:none}
     <button class="btn-action" onclick="speak(document.getElementById('popEn').textContent)">
       <span class="icon"><i data-lucide="volume-2"></i></span><span>Listen</span>
     </button>
-    <button class="btn-action primary" onclick="saveCurrentWord()">
-      <span class="icon"><i data-lucide="plus"></i></span><span>Save word</span>
+    <button class="btn-action" onclick="openYouGlish(document.getElementById('popEn').textContent)">
+      <span class="icon"><i data-lucide="youtube"></i></span><span>YouGlish</span>
     </button>
+    <button class="btn-action primary" onclick="saveCurrentWord()">
+      <span class="icon"><i data-lucide="plus"></i></span><span>Save</span>
+    </button>
+  </div>
+</div>
+
+<!-- YouGlish modal -->
+<div class="yg-modal" id="ygModal" onclick="closeYouGlish(event)">
+  <div class="yg-inner" onclick="event.stopPropagation()">
+    <div class="yg-header">
+      <div class="yg-word" id="ygWord"></div>
+      <button class="yg-close" onclick="closeYouGlish()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="yg-hint">真人在 YouTube 上怎麼唸這個字 — 點 ▶ 直接跳到那個片段</div>
+    <div id="ygContainer"><div class="yg-loading">載入中…</div></div>
   </div>
 </div>
 
@@ -1356,6 +1396,7 @@ function renderFeedCard(x){
           <span>${x.isSaved?'Saved':'Save'}</span>
         </button>
         <span class="spacer"></span>
+        <button class="icon-btn" title="YouGlish" onclick="openYouGlish('${escapeJs(x.en.split(' ').slice(0,3).join(' '))}')"><i data-lucide="youtube"></i></button>
         <button class="icon-btn" title="Edit again" onclick="reloadToInput(${x.id})"><i data-lucide="pencil"></i></button>
         <button class="icon-btn danger" title="Remove" onclick="if(confirm('Remove from today?')) deleteHistory(${x.id})"><i data-lucide="x"></i></button>
       </div>
@@ -2067,6 +2108,7 @@ function renderSentences(){
         </div>
         <div class="saved-actions">
           <button class="icon-btn" title="Listen" onclick="speak('${escapeJs(x.en)}')"><i data-lucide="volume-2"></i></button>
+          <button class="icon-btn" title="YouGlish" onclick="openYouGlish('${escapeJs(x.en.split(' ').slice(0,3).join(' '))}')"><i data-lucide="youtube"></i></button>
           <button class="icon-btn" title="Practice" onclick="openPractice('${escapeJs(x.en)}','${escapeJs(x.ipa||'')}')"><i data-lucide="mic"></i></button>
           <button class="icon-btn danger" title="Delete" onclick="if(confirm('Delete?')) deleteSentence(${x.id})"><i data-lucide="trash-2"></i></button>
         </div>
@@ -2145,6 +2187,61 @@ function toast(msg){
   const el = document.getElementById('toast');
   el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ── YouGlish ──
+let ygWidget = null;
+let ygScriptLoaded = false;
+
+function openYouGlish(query){
+  const clean = query.replace(/['"]/g,'').trim();
+  document.getElementById('ygWord').textContent = clean;
+  document.getElementById('ygContainer').innerHTML = '<div class="yg-loading">載入中…</div>';
+  document.getElementById('ygModal').classList.add('open');
+  closeWordPopup();
+
+  if (!ygScriptLoaded) {
+    const s = document.createElement('script');
+    s.src = 'https://youglish.com/api/1/youglish.js';
+    s.async = true;
+    s.onload = () => { ygScriptLoaded = true; ygInit(clean); };
+    document.head.appendChild(s);
+  } else {
+    ygInit(clean);
+  }
+}
+
+function ygInit(query){
+  document.getElementById('ygContainer').innerHTML = '<div id="ygPlayer"></div>';
+  try {
+    ygWidget = new YG.Widget('ygPlayer', {
+      width: '100%',
+      components: 9,
+      events: {
+        onFetchDone: (e) => {
+          if (e.totalResult === 0) {
+            document.getElementById('ygContainer').innerHTML =
+              '<div class="yg-loading">找不到結果 — 試試其他單字</div>';
+          }
+        },
+        onError: () => {
+          document.getElementById('ygContainer').innerHTML =
+            '<div class="yg-loading">載入失敗，請稍後再試</div>';
+        }
+      }
+    });
+    ygWidget.search(query);
+  } catch(e) {
+    document.getElementById('ygContainer').innerHTML =
+      `<div class="yg-loading">無法載入 YouGlish。<br><a href="https://youglish.com/pronounce/${encodeURIComponent(query)}/english" target="_blank" style="color:var(--accent)">在 YouGlish 開啟 ↗</a></div>`;
+  }
+}
+
+function closeYouGlish(e){
+  if (e && e.target !== document.getElementById('ygModal')) return;
+  document.getElementById('ygModal').classList.remove('open');
+  if (ygWidget) { try { ygWidget.destroy && ygWidget.destroy(); } catch(_){} ygWidget = null; }
+  document.getElementById('ygContainer').innerHTML = '';
 }
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
