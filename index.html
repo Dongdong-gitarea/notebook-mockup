@@ -1260,10 +1260,8 @@ function stopPracticeRecording(){
   if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
     try { practiceMediaRecorder.stop(); } catch(e){}
   }
-  if (practiceAudioStream) {
-    practiceAudioStream.getTracks().forEach(t => t.stop());
-    practiceAudioStream = null;
-  }
+  // 不要在這裡 stop stream tracks — iOS Safari 會讓 MediaRecorder.onstop 不 fire
+  // 由 onstop / SR.onend 自己 cleanup stream
 }
 function practiceListen(){
   speak(practiceTarget);
@@ -1315,7 +1313,7 @@ async function practiceRecord(){
           showPracticeResult(null);
         }
       };
-      practiceMediaRecorder.start();
+      practiceMediaRecorder.start(1000); // timeslice — iOS Safari 需要
       mrStarted = true;
     } catch (e) {
       console.warn('MediaRecorder failed:', e);
