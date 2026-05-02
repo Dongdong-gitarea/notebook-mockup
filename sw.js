@@ -1,13 +1,6 @@
-const CACHE = 'notebook-v1';
-const ASSETS = [
-  '/notebook-mockup/',
-  '/notebook-mockup/index.html'
-];
+const CACHE = 'notebook-v2';
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
-  );
   self.skipWaiting();
 });
 
@@ -21,19 +14,35 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // 翻譯 API 永遠走網路（不 cache）
-  if (e.request.url.includes('mymemory.translated.net')) return;
+  const url = new URL(e.request.url);
 
+  // 外部 API 直接走網路，不攔截
+  if (!url.origin.includes('github.io')) return;
+
+  // Navigation（開啟 app）永遠 network-first，確保 iOS 不白畫面
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // 靜態資源 cache-first
   e.respondWith(
     caches.match(e.request).then(cached => {
-      // 有 cache 先回傳，同時背景更新
-      const network = fetch(e.request).then(res => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
         if (res.ok) {
           caches.open(CACHE).then(c => c.put(e.request, res.clone()));
         }
         return res;
-      }).catch(() => null);
-      return cached || network;
+      });
     })
   );
 });
