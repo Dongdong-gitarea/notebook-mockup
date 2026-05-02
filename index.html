@@ -577,14 +577,22 @@ button svg, button i[data-lucide]{pointer-events:none}
 .practice-target{
   background:linear-gradient(180deg,rgba(96,165,250,.06) 0%,rgba(34,211,238,.03) 100%);
   border:1px solid rgba(96,165,250,.2);border-radius:18px;
-  padding:24px;text-align:center;margin-bottom:20px;
+  padding:24px;text-align:center;margin-bottom:20px;transition:all .25s;
 }
+.has-result .practice-target{padding:14px 18px;margin-bottom:12px;border-radius:14px}
+.has-result .target-en{font-size:16px;margin-bottom:4px}
+.has-result .target-ipa{font-size:11px}
 .target-en{
   font-family:'Fraunces',serif;
   font-size:22px;font-weight:500;color:var(--ink);
-  line-height:1.5;margin-bottom:10px;letter-spacing:-.01em;
+  line-height:1.5;margin-bottom:10px;letter-spacing:-.01em;transition:all .25s;
 }
-.target-ipa{font-size:12px;color:var(--muted);font-style:italic;letter-spacing:.02em}
+.target-ipa{font-size:12px;color:var(--muted);font-style:italic;letter-spacing:.02em;transition:all .25s}
+/* 紅字可點擊唸出聲 */
+.practice-transcript .target .bad{
+  cursor:pointer;text-decoration-style:dotted;
+}
+.practice-transcript .target .bad:active{opacity:.7}
 
 .practice-listen{
   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -592,11 +600,13 @@ button svg, button i[data-lucide]{pointer-events:none}
   background:var(--surface);border:1px solid var(--border);border-radius:14px;
   color:var(--ink-2);font-family:inherit;font-size:14px;font-weight:500;
   cursor:pointer;margin-bottom:24px;transition:all .15s;
+  overflow:hidden;max-height:60px;
 }
 .practice-listen:hover{background:var(--surface-hover);border-color:var(--border-strong);color:var(--ink)}
 .practice-listen .icon{font-size:16px;color:var(--accent)}
-
-.practice-record-area{text-align:center;padding:8px 0 16px}
+.has-result .practice-listen{max-height:0;margin-bottom:0;padding:0;border-width:0;opacity:0;transition:all .25s}
+.has-result .practice-record-area{max-height:0;overflow:hidden;opacity:0;transition:all .25s}
+.practice-record-area{text-align:center;padding:8px 0 16px;max-height:200px;transition:all .25s;overflow:hidden}
 .practice-mic-big{
   width:96px;height:96px;border-radius:50%;border:none;cursor:pointer;
   background:linear-gradient(135deg,var(--accent-deep) 0%,var(--accent-glow) 100%);
@@ -737,6 +747,9 @@ button svg, button i[data-lucide]{pointer-events:none}
   .bottom-bar-inner{padding:12px 14px 10px;border-radius:20px}
   .bottom-input textarea{font-size:15px;min-height:38px}
   .feed-section-label{font-size:17px}
+  /* Card buttons: icon-only on mobile */
+  .feed-card-actions .btn span:not(.icon){display:none}
+  .feed-card-actions .btn{padding:9px 11px;gap:0}
   /* Practice modal — bottom sheet on mobile */
   .practice-modal{align-items:flex-end;padding:0}
   .practice-modal-inner{
@@ -1479,6 +1492,7 @@ function showPracticeResult(transcript){
   }
 
   document.getElementById('practiceResult').classList.add('show');
+  document.querySelector('.practice-modal-inner').classList.add('has-result');
   document.getElementById('practiceStatus').textContent = 'Tap to try again';
   if (typeof lucide !== 'undefined') lucide.createIcons();
   // 顯示「You」「Compare」按鈕（如果有錄到音）
@@ -1520,7 +1534,8 @@ function diffPronunciation(spoken, original){
     const key = norm(tok);
     if (!key) return escapeHtml(tok);
     const ok = spokenSet.has(key);
-    return `<span class="${ok ? 'ok' : 'bad'}">${escapeHtml(tok)}</span>`;
+    if (!ok) return `<span class="bad" onclick="speak('${escapeJs(tok)}')" title="Tap to hear">${escapeHtml(tok)}</span>`;
+    return `<span class="ok">${escapeHtml(tok)}</span>`;
   }).join('');
 
   // You said：用戶講的 — 不在原文內的單字標紅（可能是發錯成別的字）
@@ -1538,6 +1553,7 @@ function diffPronunciation(spoken, original){
 }
 function practiceReset(){
   document.getElementById('practiceResult').classList.remove('show');
+  document.querySelector('.practice-modal-inner').classList.remove('has-result');
   document.getElementById('practiceStatus').textContent = 'Tap to record';
 }
 
