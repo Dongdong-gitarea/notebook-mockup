@@ -1272,6 +1272,7 @@ async function practiceRecord(){
     return;
   }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const hasMR = typeof MediaRecorder !== 'undefined'
     && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function';
 
@@ -1280,18 +1281,23 @@ async function practiceRecord(){
     return;
   }
 
-  // 1. 取 mic stream（兩種路徑都需要）
-  try {
-    practiceAudioStream = await navigator.mediaDevices.getUserMedia({audio: true});
-  } catch (e) {
-    toast('Microphone permission denied');
-    return;
+  // iOS + SR：SR 和 getUserMedia 不能並行（搶麥克風），只用 SR 評分，不錄音
+  const usesMR = hasMR && (!isIOS || !SR);
+
+  // 1. 取 mic stream（只有要錄音時才需要）
+  if (usesMR) {
+    try {
+      practiceAudioStream = await navigator.mediaDevices.getUserMedia({audio: true});
+    } catch (e) {
+      toast('Microphone permission denied');
+      return;
+    }
   }
 
-  // 2. MediaRecorder 錄音檔（iOS Safari 14.5+ 也支援）
+  // 2. MediaRecorder 錄音檔
   const chunks = [];
   let mrStarted = false;
-  if (hasMR) {
+  if (usesMR) {
     try {
       practiceMediaRecorder = new MediaRecorder(practiceAudioStream);
       practiceMediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
@@ -1304,7 +1310,6 @@ async function practiceRecord(){
           practiceAudioStream.getTracks().forEach(t => t.stop());
           practiceAudioStream = null;
         }
-        // 沒 SR 時，由 MediaRecorder.onstop 負責收尾 + 顯示結果
         if (!SR) {
           practiceIsRecording = false;
           document.getElementById('practiceMic').classList.remove('recording');
@@ -1313,21 +1318,19 @@ async function practiceRecord(){
           showPracticeResult(null);
         }
       };
-      practiceMediaRecorder.start(1000); // timeslice — iOS Safari 需要
+      practiceMediaRecorder.start(1000);
       mrStarted = true;
     } catch (e) {
       console.warn('MediaRecorder failed:', e);
-      // 沒 SR 又沒 MediaRecorder：徹底沒戲
       if (!SR) {
         if (practiceAudioStream) { practiceAudioStream.getTracks().forEach(t => t.stop()); practiceAudioStream = null; }
         toast('Recording failed on this browser');
         return;
       }
-      // 有 SR 就照舊只跑 SR
     }
   }
 
-  // 3. SpeechRecognition（負責轉文字評分）— iOS 沒這個 API，純錄音
+  // 3. SpeechRecognition 評分
   if (SR) {
     practiceRecognition = new SR();
     practiceRecognition.lang = 'en-US';
@@ -1335,8 +1338,12 @@ async function practiceRecord(){
     practiceRecognition.continuous = false;
     practiceRecognition.onresult = (e) => {
       const transcript = e.results[0][0].transcript;
-      // 等 MediaRecorder onstop 跑完才有 blob
-      setTimeout(() => showPracticeResult(transcript), 100);
+      if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
+        practiceMediaRecorder.stop();
+        setTimeout(() => showPracticeResult(transcript), 300);
+      } else {
+        showPracticeResult(transcript);
+      }
     };
     practiceRecognition.onerror = (e) => {
       if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
@@ -1359,7 +1366,6 @@ async function practiceRecord(){
     };
     practiceRecognition.start();
   } else if (!mrStarted) {
-    // 不該到這 — 上面已 return
     return;
   }
 
