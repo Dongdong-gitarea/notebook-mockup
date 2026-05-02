@@ -1337,20 +1337,27 @@ async function practiceRecord(){
   if (SR) {
     practiceRecognition = new SR();
     practiceRecognition.lang = 'en-US';
-    practiceRecognition.interimResults = false;
-    practiceRecognition.continuous = false;
-    practiceRecognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      toast('Got: ' + transcript.slice(0, 30));
+    practiceRecognition.interimResults = true;  // 邊說邊存，iOS 手動 stop 後才有結果
+    practiceRecognition.continuous = true;       // 不自動停，讓使用者決定何時結束
+    let latestTranscript = '';
+    let resultShown = false;
+    const showResult = (t) => {
+      if (resultShown) return;
+      resultShown = true;
       if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
         practiceMediaRecorder.stop();
-        setTimeout(() => showPracticeResult(transcript), 300);
+        setTimeout(() => showPracticeResult(t || null), 300);
       } else {
-        showPracticeResult(transcript);
+        showPracticeResult(t || null);
       }
     };
+    practiceRecognition.onresult = (e) => {
+      let text = '';
+      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+      latestTranscript = text;
+    };
     practiceRecognition.onerror = (e) => {
-      toast('SR error: ' + e.error);
+      if (e.error !== 'no-speech') toast('SR error: ' + e.error);
       if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
         try { practiceMediaRecorder.stop(); } catch(_){}
       }
@@ -1361,14 +1368,11 @@ async function practiceRecord(){
       document.getElementById('practiceStatus').textContent = e.error === 'no-speech' ? "Didn't hear anything — try again" : 'Error: ' + e.error;
     };
     practiceRecognition.onend = () => {
-      toast('SR ended (no result)');
-      if (practiceMediaRecorder && practiceMediaRecorder.state === 'recording') {
-        try { practiceMediaRecorder.stop(); } catch(_){}
-      }
       practiceIsRecording = false;
       document.getElementById('practiceMic').classList.remove('recording');
       document.getElementById('practiceMic').innerHTML = '<i data-lucide="mic"></i>';
       if (typeof lucide !== 'undefined') lucide.createIcons();
+      showResult(latestTranscript);
     };
     practiceRecognition.start();
   } else if (!mrStarted) {
