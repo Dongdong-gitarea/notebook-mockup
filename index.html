@@ -155,6 +155,16 @@ body::before{
   box-shadow:inset 0 0 0 1px var(--border-strong);
 }
 .theme-btn .icon{font-size:14px}
+.backup-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.backup-btn{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:10px;color:var(--ink-2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  font-family:inherit;font-size:13px;font-weight:500;transition:all .15s;
+}
+.backup-btn:hover{background:var(--surface-hover);border-color:var(--border-strong);color:var(--ink)}
+.backup-btn .icon{font-size:13px;color:var(--accent)}
+.backup-hint{font-size:11px;color:var(--muted-2);margin-top:8px;letter-spacing:.01em}
 .speed-row{display:flex;align-items:center;gap:10px;margin-top:2px}
 .speed-row input[type=range]{
   flex:1;-webkit-appearance:none;appearance:none;height:4px;
@@ -214,6 +224,18 @@ body::before{
 }
 .example-card-arrow{color:var(--accent);flex-shrink:0;display:flex;font-size:16px;transition:transform .2s}
 .example-card:hover .example-card-arrow{transform:translateX(2px)}
+
+/* Yesterday warmup block on empty home */
+.warmup-block{margin:8px 0 28px}
+.warmup-label{
+  font-family:'Fraunces',serif;font-size:18px;font-weight:500;letter-spacing:-.005em;color:var(--ink);
+  display:flex;align-items:center;gap:8px;margin-bottom:12px;
+}
+.warmup-label .icon{color:var(--accent);font-size:15px;display:flex}
+.warmup-label .warmup-sub{
+  margin-left:auto;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;
+  color:var(--muted-2);letter-spacing:.04em;text-transform:uppercase;
+}
 
 /* ── Feed: translation cards ── */
 .feed{display:flex;flex-direction:column;gap:14px}
@@ -539,6 +561,25 @@ button svg, button i[data-lucide]{pointer-events:none}
 }
 .filter-tab.active .num{background:rgba(96,165,250,.2);color:var(--accent)}
 
+.sentence-search{
+  position:relative;display:flex;align-items:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:0 12px;margin-bottom:12px;transition:all .15s;
+}
+.sentence-search:focus-within{border-color:rgba(96,165,250,.45);background:var(--surface-hover)}
+.sentence-search-icon{color:var(--muted);font-size:14px;display:flex;flex-shrink:0}
+.sentence-search input{
+  flex:1;background:transparent;border:none;outline:none;
+  padding:11px 10px;color:var(--ink);font-family:inherit;font-size:14px;
+}
+.sentence-search input::placeholder{color:var(--muted-2)}
+.sentence-search-clear{
+  background:transparent;border:none;color:var(--muted);cursor:pointer;
+  padding:4px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.sentence-search-clear:hover{color:var(--ink-2);background:var(--surface-hover)}
+
 /* History group */
 .history-group{margin-bottom:28px}
 .history-group-label{
@@ -793,6 +834,100 @@ button svg, button i[data-lucide]{pointer-events:none}
 }
 .practice-actions button .icon{font-size:14px}
 
+/* Words toolbar + Quiz */
+.words-toolbar{display:flex;justify-content:flex-end;margin-bottom:14px}
+.quiz-cta{
+  background:linear-gradient(135deg,rgba(96,165,250,.14) 0%,rgba(34,211,238,.14) 100%);
+  border:1px solid rgba(96,165,250,.35);border-radius:50px;
+  padding:9px 18px;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink);
+  cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .15s;
+}
+.quiz-cta:hover{transform:translateY(-1px);box-shadow:0 6px 18px -6px rgba(96,165,250,.5);border-color:rgba(96,165,250,.6)}
+.quiz-cta .icon{color:var(--accent);font-size:14px;display:flex}
+.quiz-cta-sub{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;border-left:1px solid var(--border);padding-left:8px;margin-left:2px}
+
+.quiz-modal{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,1,6,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+[data-theme="light"] .quiz-modal{background:rgba(15,23,42,.6)}
+.quiz-modal.open{display:flex}
+.quiz-modal-inner{
+  width:100%;max-width:460px;background:var(--bg-2);
+  border:1px solid var(--border-strong);border-radius:24px;
+  padding:32px 28px;box-shadow:0 24px 60px rgba(0,0,0,.6);position:relative;
+}
+.quiz-progress{
+  font-family:'Inter',sans-serif;font-size:11px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);
+  text-align:center;margin-bottom:18px;
+}
+.quiz-card{display:flex;flex-direction:column;align-items:center;text-align:center}
+.quiz-en{
+  font-family:'Fraunces',serif;font-size:42px;font-weight:500;
+  color:var(--ink);letter-spacing:-.01em;margin-bottom:6px;word-break:break-word;
+}
+.quiz-ipa{font-size:14px;color:var(--muted);font-style:italic;margin-bottom:14px;letter-spacing:.02em;min-height:18px}
+.quiz-listen-row{margin-bottom:20px}
+.quiz-listen{
+  background:var(--surface);border:1px solid var(--border);border-radius:50px;
+  padding:8px 18px;font-family:inherit;font-size:13px;color:var(--ink-2);
+  cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s;
+}
+.quiz-listen:hover{background:var(--surface-hover);border-color:var(--border-strong);color:var(--ink)}
+.quiz-listen .icon{color:var(--accent);font-size:14px;display:flex}
+.quiz-answer{
+  width:100%;padding:18px 16px;border-radius:14px;background:var(--surface);
+  border:1px dashed var(--border);margin-bottom:18px;min-height:64px;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;
+  opacity:0;max-height:0;overflow:hidden;transition:all .25s ease;padding-top:0;padding-bottom:0;
+}
+.quiz-answer.show{opacity:1;max-height:200px;padding-top:18px;padding-bottom:18px}
+.quiz-pos{
+  font-size:11px;color:var(--cyan);font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.quiz-zh{font-size:18px;color:var(--ink);font-weight:500}
+.quiz-actions{display:flex;gap:10px;justify-content:center;width:100%}
+.quiz-actions-grade{display:flex}
+.quiz-btn{
+  flex:1;background:var(--surface);border:1px solid var(--border);border-radius:50px;
+  padding:12px 20px;color:var(--ink);font-family:inherit;font-size:14px;font-weight:600;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  transition:all .15s;
+}
+.quiz-btn:hover{background:var(--surface-hover);border-color:var(--border-strong)}
+.quiz-btn .icon{font-size:14px;display:flex}
+.quiz-show{
+  background:linear-gradient(135deg,var(--accent-deep) 0%,var(--accent) 100%);
+  color:#fff;border-color:transparent;
+  box-shadow:0 4px 12px -2px rgba(59,130,246,.4);
+}
+.quiz-show:hover{box-shadow:0 6px 16px -2px rgba(59,130,246,.5)}
+.quiz-good{
+  background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4);color:#10B981;
+}
+.quiz-good:hover{background:rgba(16,185,129,.18);border-color:rgba(16,185,129,.6)}
+.quiz-bad{
+  background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.35);color:#ef4444;
+}
+.quiz-bad:hover{background:rgba(239,68,68,.16);border-color:rgba(239,68,68,.55)}
+.quiz-summary{display:flex;flex-direction:column;align-items:center;text-align:center;padding:16px 0}
+.quiz-summary-icon{
+  width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(96,165,250,.18) 0%,rgba(34,211,238,.18) 100%);
+  border:1px solid rgba(96,165,250,.35);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--accent);font-size:28px;margin-bottom:14px;
+}
+.quiz-summary-score{
+  font-family:'Fraunces',serif;font-size:48px;font-weight:500;
+  color:var(--ink);letter-spacing:-.01em;margin-bottom:6px;
+}
+.quiz-summary-msg{font-size:14px;color:var(--muted);margin-bottom:22px}
+.quiz-summary-actions{display:flex;gap:10px;width:100%}
+
 [data-view]{display:none}
 [data-view].active{display:block;animation:fadeIn .3s ease-out}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
@@ -855,6 +990,15 @@ button svg, button i[data-lucide]{pointer-events:none}
   .practice-transcript{font-size:12px;padding:8px 12px}
   .practice-audio-row{flex-wrap:wrap;gap:8px}
   .practice-actions{margin-top:12px}
+  /* Quiz modal — bottom sheet on mobile */
+  .quiz-modal{align-items:flex-end;padding:0}
+  .quiz-modal-inner{
+    border-radius:24px 24px 0 0;max-height:88vh;
+    padding:24px 20px 32px;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom));
+  }
+  .quiz-en{font-size:32px}
+  .quiz-summary-score{font-size:40px}
 }
 </style>
 </head>
@@ -903,6 +1047,19 @@ button svg, button i[data-lucide]{pointer-events:none}
               <span class="icon"><i data-lucide="sun"></i></span><span>Light</span>
             </button>
           </div>
+        </div>
+        <div class="setting-group">
+          <div class="setting-label"><span class="icon"><i data-lucide="database"></i></span><span>Backup</span></div>
+          <div class="backup-row">
+            <button class="backup-btn" onclick="exportData()">
+              <span class="icon"><i data-lucide="download"></i></span><span>Export</span>
+            </button>
+            <button class="backup-btn" onclick="document.getElementById('importFile').click()">
+              <span class="icon"><i data-lucide="upload"></i></span><span>Import</span>
+            </button>
+            <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(event)">
+          </div>
+          <div class="backup-hint">下載 / 還原 句子、單字、歷史記錄</div>
         </div>
       </div>
     </div>
@@ -986,6 +1143,13 @@ button svg, button i[data-lucide]{pointer-events:none}
         <div class="cur-en" id="apCurEn"></div>
       </div>
     </div>
+    <div class="sentence-search" id="sentenceSearchWrap">
+      <span class="sentence-search-icon"><i data-lucide="search"></i></span>
+      <input type="text" id="sentenceSearch" placeholder="搜尋中文 / 英文…" oninput="onSentenceSearch(this.value)">
+      <button class="sentence-search-clear" id="sentenceSearchClear" onclick="clearSentenceSearch()" style="display:none" aria-label="Clear">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
     <div class="filter-tabs" id="sentenceFilters"></div>
     <div id="sentenceList"></div>
   </div>
@@ -997,6 +1161,13 @@ button svg, button i[data-lucide]{pointer-events:none}
       <span class="label">My Words</span>
       <span class="count" id="wordCount">0</span>
       <div class="line"></div>
+    </div>
+    <div class="words-toolbar" id="wordsToolbar">
+      <button class="quiz-cta" onclick="openQuiz()">
+        <span class="icon"><i data-lucide="sparkles"></i></span>
+        <span>Quick Quiz</span>
+        <span class="quiz-cta-sub" id="quizCtaSub">5 random words</span>
+      </button>
     </div>
     <div id="wordList"></div>
   </div>
@@ -1104,6 +1275,51 @@ button svg, button i[data-lucide]{pointer-events:none}
   </div>
 </div>
 
+<!-- Quiz modal -->
+<div class="quiz-modal" id="quizModal" onclick="closeQuiz(event)">
+  <div class="quiz-modal-inner" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeQuiz()" aria-label="Close"><i data-lucide="x"></i></button>
+    <div class="quiz-progress" id="quizProgress">1 / 5</div>
+    <div class="quiz-card" id="quizCard">
+      <div class="quiz-en" id="quizEn"></div>
+      <div class="quiz-ipa" id="quizIpa"></div>
+      <div class="quiz-listen-row">
+        <button class="quiz-listen" onclick="speak(document.getElementById('quizEn').textContent)">
+          <span class="icon"><i data-lucide="volume-2"></i></span><span>Listen</span>
+        </button>
+      </div>
+      <div class="quiz-answer" id="quizAnswer">
+        <div class="quiz-pos" id="quizPos"></div>
+        <div class="quiz-zh" id="quizZh"></div>
+      </div>
+      <div class="quiz-actions" id="quizActions">
+        <button class="quiz-btn quiz-show" onclick="quizReveal()">
+          <span class="icon"><i data-lucide="eye"></i></span><span>Show answer</span>
+        </button>
+      </div>
+      <div class="quiz-actions quiz-actions-grade" id="quizActionsGrade" style="display:none">
+        <button class="quiz-btn quiz-bad" onclick="quizGrade(false)">
+          <span class="icon"><i data-lucide="x"></i></span><span>Forgot</span>
+        </button>
+        <button class="quiz-btn quiz-good" onclick="quizGrade(true)">
+          <span class="icon"><i data-lucide="check"></i></span><span>Got it</span>
+        </button>
+      </div>
+    </div>
+    <div class="quiz-summary" id="quizSummary" style="display:none">
+      <div class="quiz-summary-icon"><i data-lucide="trophy"></i></div>
+      <div class="quiz-summary-score" id="quizSummaryScore">0 / 5</div>
+      <div class="quiz-summary-msg" id="quizSummaryMsg"></div>
+      <div class="quiz-summary-actions">
+        <button class="quiz-btn" onclick="closeQuiz()"><span>Done</span></button>
+        <button class="quiz-btn quiz-good" onclick="restartQuiz()">
+          <span class="icon"><i data-lucide="rotate-ccw"></i></span><span>Again</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">
   <span class="icon"><i data-lucide="check-circle-2"></i></span>
   <span id="toastText"></span>
@@ -1121,6 +1337,7 @@ const CATEGORIES = [
 ];
 let selectedCategory = localStorage.getItem('rl_cat') || 'personal';
 let activeFilter = 'all';
+let sentenceSearchQuery = '';
 
 function getCategory(id){return CATEGORIES.find(c=>c.id===id) || CATEGORIES[0]}
 
@@ -1262,6 +1479,80 @@ function saveSentencesArr(a){localStorage.setItem('rl_sentences_v8',JSON.stringi
 function loadWords(){return JSON.parse(localStorage.getItem('rl_words_v8')||'[]')}
 function saveWordsArr(a){localStorage.setItem('rl_words_v8',JSON.stringify(a))}
 
+// ── Export / Import ──
+function exportData(){
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    history: loadHistory(),
+    sentences: loadSentences(),
+    words: loadWords(),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `notebook-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded');
+}
+
+function importData(ev){
+  const file = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try { data = JSON.parse(reader.result); }
+    catch(_) { toast('Invalid JSON file'); return; }
+    if (!data || (!Array.isArray(data.history) && !Array.isArray(data.sentences) && !Array.isArray(data.words))) {
+      toast('Not a valid backup file'); return;
+    }
+    const counts = {
+      history: Array.isArray(data.history) ? data.history.length : 0,
+      sentences: Array.isArray(data.sentences) ? data.sentences.length : 0,
+      words: Array.isArray(data.words) ? data.words.length : 0,
+    };
+    const ok = confirm(`Import ${counts.sentences} sentences, ${counts.words} words, ${counts.history} history?\n\n選 OK = 合併（保留現有資料）\n選 Cancel = 取消`);
+    if (!ok) return;
+    mergeImported(data);
+    toast(`Imported · merged with existing`);
+    updateBadges();
+    renderView();
+  };
+  reader.onerror = () => toast('Failed to read file');
+  reader.readAsText(file);
+}
+
+function mergeImported(data){
+  if (Array.isArray(data.history)) {
+    const existing = loadHistory();
+    const seen = new Set(existing.map(x => x.id));
+    const merged = existing.concat(data.history.filter(x => x && !seen.has(x.id)));
+    merged.sort((a,b) => new Date(b.savedAt) - new Date(a.savedAt));
+    saveHistoryArr(merged.slice(0, 200));
+  }
+  if (Array.isArray(data.sentences)) {
+    const existing = loadSentences();
+    const key = x => `${x.zh}|${x.en}`;
+    const seen = new Set(existing.map(key));
+    const merged = existing.concat(data.sentences.filter(x => x && !seen.has(key(x))));
+    saveSentencesArr(merged);
+  }
+  if (Array.isArray(data.words)) {
+    const existing = loadWords();
+    const seen = new Set(existing.map(x => x.word));
+    const merged = existing.concat(data.words.filter(x => x && x.word && !seen.has(x.word)));
+    saveWordsArr(merged);
+  }
+}
+
 function isToday(iso){const d=new Date(iso),n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate()}
 function isYesterday(iso){const d=new Date(iso),y=new Date();y.setDate(y.getDate()-1);return d.getFullYear()===y.getFullYear()&&d.getMonth()===y.getMonth()&&d.getDate()===y.getDate()}
 function isThisWeek(iso){if(isToday(iso)||isYesterday(iso))return false;return (Date.now()-new Date(iso).getTime())/(1000*60*60*24)<7}
@@ -1332,14 +1623,26 @@ function renderMain(){
   const main = document.getElementById('mainContent');
 
   if (!todayArr.length) {
-    // Empty state with examples
+    const yesterdayArr = all.filter(x => isYesterday(x.savedAt)).slice(0, 3);
+    const warmupBlock = yesterdayArr.length ? `
+      <div class="warmup-block">
+        <div class="warmup-label">
+          <span class="icon"><i data-lucide="sunrise"></i></span>
+          <span>Warm up with yesterday</span>
+          <span class="warmup-sub">先複習，再開始今天</span>
+        </div>
+        <div class="feed">
+          ${yesterdayArr.map(x => renderFeedCard(x)).join('')}
+        </div>
+      </div>` : '';
     main.innerHTML = `
       <div class="empty-hero">
         <h1>Today, <em>what</em> do you want to say?</h1>
         <p>寫下任何中文 — 工作信、日記、想法 — 我幫你翻成自然的英文，按主題收藏，陪你練到能說出口。</p>
       </div>
+      ${warmupBlock}
       <div class="example-cards">
-        <div class="example-cards-label"><span class="icon"><i data-lucide="lightbulb"></i></span><span>Try an example</span></div>
+        <div class="example-cards-label"><span class="icon"><i data-lucide="lightbulb"></i></span><span>${yesterdayArr.length ? 'Or translate something new' : 'Try an example'}</span></div>
         <button class="example-card" onclick="useExample('今天會議我覺得很挫折，因為大家沒有共識')">
           <span class="example-card-arrow"><i data-lucide="arrow-right"></i></span>
           <span>今天會議我覺得很挫折，因為大家沒有共識</span>
@@ -1906,6 +2209,89 @@ function saveCurrentWord(){
   hideWordPopup();
 }
 function deleteWord(id){saveWordsArr(loadWords().filter(x=>x.id!==id));renderWords();updateBadges()}
+
+function onSentenceSearch(v){
+  sentenceSearchQuery = v;
+  document.getElementById('sentenceSearchClear').style.display = v ? '' : 'none';
+  renderSentences();
+}
+function clearSentenceSearch(){
+  sentenceSearchQuery = '';
+  const inp = document.getElementById('sentenceSearch');
+  if (inp) inp.value = '';
+  document.getElementById('sentenceSearchClear').style.display = 'none';
+  renderSentences();
+}
+
+// ── Quick Quiz ──
+const QUIZ = { queue: [], idx: 0, correct: 0, total: 0, revealed: false };
+
+function openQuiz(){
+  const all = loadWords();
+  if (all.length < 3) { toast('Save at least 3 words first'); return; }
+  const pick = Math.min(5, all.length);
+  const shuffled = all.slice().sort(() => Math.random() - 0.5).slice(0, pick);
+  QUIZ.queue = shuffled;
+  QUIZ.idx = 0;
+  QUIZ.correct = 0;
+  QUIZ.total = shuffled.length;
+  document.getElementById('quizSummary').style.display = 'none';
+  document.getElementById('quizCard').style.display = '';
+  document.getElementById('quizModal').classList.add('open');
+  showQuizCard();
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function closeQuiz(ev){
+  if (ev && ev.target && !ev.target.classList.contains('quiz-modal') && !ev.target.closest('.modal-close')) return;
+  document.getElementById('quizModal').classList.remove('open');
+  speechSynthesis.cancel();
+}
+
+function showQuizCard(){
+  const w = QUIZ.queue[QUIZ.idx];
+  if (!w) { showQuizSummary(); return; }
+  QUIZ.revealed = false;
+  document.getElementById('quizProgress').textContent = `${QUIZ.idx + 1} / ${QUIZ.total}`;
+  document.getElementById('quizEn').textContent = w.word;
+  document.getElementById('quizIpa').textContent = w.ipa || '';
+  document.getElementById('quizPos').textContent = w.pos || '';
+  document.getElementById('quizPos').style.display = w.pos ? '' : 'none';
+  document.getElementById('quizZh').textContent = w.zh || '(no translation)';
+  document.getElementById('quizAnswer').classList.remove('show');
+  document.getElementById('quizActions').style.display = '';
+  document.getElementById('quizActionsGrade').style.display = 'none';
+}
+
+function quizReveal(){
+  QUIZ.revealed = true;
+  document.getElementById('quizAnswer').classList.add('show');
+  document.getElementById('quizActions').style.display = 'none';
+  document.getElementById('quizActionsGrade').style.display = 'flex';
+}
+
+function quizGrade(correct){
+  if (correct) QUIZ.correct++;
+  QUIZ.idx++;
+  if (QUIZ.idx >= QUIZ.queue.length) { showQuizSummary(); }
+  else { showQuizCard(); }
+}
+
+function showQuizSummary(){
+  document.getElementById('quizCard').style.display = 'none';
+  document.getElementById('quizSummary').style.display = 'flex';
+  document.getElementById('quizSummaryScore').textContent = `${QUIZ.correct} / ${QUIZ.total}`;
+  const ratio = QUIZ.correct / QUIZ.total;
+  let msg;
+  if (ratio === 1) msg = '完美！全部記住了 🎯';
+  else if (ratio >= 0.7) msg = '不錯，再來一輪鞏固';
+  else if (ratio >= 0.4) msg = '繼續練，下次會更熟';
+  else msg = '剛存的字還很新，多看幾次';
+  document.getElementById('quizSummaryMsg').textContent = msg;
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function restartQuiz(){ openQuiz(); }
 function deleteHistory(id){
   saveHistoryArr(loadHistory().filter(x=>x.id!==id));
   renderMain();renderHistory();
@@ -2091,11 +2477,24 @@ function apStop(finished){
 
 function renderSentences(){
   const all = loadSentences();
-  const arr = activeFilter === 'all' ? all : all.filter(x => x.category === activeFilter);
+  let arr = activeFilter === 'all' ? all : all.filter(x => x.category === activeFilter);
+  const q = sentenceSearchQuery.trim().toLowerCase();
+  if (q) {
+    arr = arr.filter(x =>
+      (x.zh || '').toLowerCase().includes(q) ||
+      (x.en || '').toLowerCase().includes(q)
+    );
+  }
   document.getElementById('sentenceCount').textContent = all.length;
+  const searchWrap = document.getElementById('sentenceSearchWrap');
+  if (searchWrap) searchWrap.style.display = all.length === 0 ? 'none' : '';
   const c = document.getElementById('sentenceList');
   if (!arr.length) {
-    c.innerHTML = `<div class="empty-state"><div class="icon-wrap"><i data-lucide="book-open-text"></i></div><div class="title">${all.length === 0 ? 'Your sentence vault is empty' : 'No sentences in this category'}</div><div class="desc">${all.length === 0 ? '回主頁翻譯 → 按「Save」' : '切到其他分類查看'}</div></div>`;
+    let title, desc;
+    if (all.length === 0) { title = 'Your sentence vault is empty'; desc = '回主頁翻譯 → 按「Save」'; }
+    else if (q) { title = `沒找到「${escapeHtml(sentenceSearchQuery)}」`; desc = '換個關鍵字試試'; }
+    else { title = 'No sentences in this category'; desc = '切到其他分類查看'; }
+    c.innerHTML = `<div class="empty-state"><div class="icon-wrap"><i data-lucide="book-open-text"></i></div><div class="title">${title}</div><div class="desc">${desc}</div></div>`;
     if (typeof lucide !== 'undefined') lucide.createIcons(); return;
   }
   c.innerHTML = arr.map(x => {
@@ -2126,6 +2525,15 @@ function renderWords(){
   const arr = loadWords();
   document.getElementById('wordCount').textContent = arr.length;
   const c = document.getElementById('wordList');
+  const toolbar = document.getElementById('wordsToolbar');
+  if (toolbar) {
+    const showQuiz = arr.length >= 3;
+    toolbar.style.display = showQuiz ? '' : 'none';
+    if (showQuiz) {
+      const sub = document.getElementById('quizCtaSub');
+      if (sub) sub.textContent = `${Math.min(5, arr.length)} random words`;
+    }
+  }
   if (!arr.length) {
     c.innerHTML = `<div class="empty-state"><div class="icon-wrap"><i data-lucide="library"></i></div><div class="title">Your word vault is empty</div><div class="desc">回主頁，點翻譯結果裡的任何單字 → Save word</div></div>`;
     if (typeof lucide !== 'undefined') lucide.createIcons(); return;
