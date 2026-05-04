@@ -2208,12 +2208,26 @@ window.onYouglishAPIReady = function(YG){
   }
 };
 
+let ygLoadTimer = null;
+
+function ygFallbackHtml(query){
+  return `<div class="yg-loading">無法載入 YouGlish。<br><a href="https://youglish.com/pronounce/${encodeURIComponent(query)}/english" target="_blank" style="color:var(--accent)">在 YouGlish 網站開啟 ↗</a></div>`;
+}
+
 function openYouGlish(query){
   const clean = query.replace(/['"]/g,'').trim();
   document.getElementById('ygWord').textContent = clean;
   document.getElementById('ygContainer').innerHTML = '<div class="yg-loading">載入中…</div>';
   document.getElementById('ygModal').classList.add('open');
   closeWordPopup();
+  // Timeout: if not ready in 8s, show fallback link
+  clearTimeout(ygLoadTimer);
+  ygLoadTimer = setTimeout(() => {
+    const c = document.getElementById('ygContainer');
+    if (c && c.querySelector('.yg-loading') && c.textContent.includes('載入中')) {
+      c.innerHTML = ygFallbackHtml(clean);
+    }
+  }, 8000);
   ygCreate(clean);
 }
 
@@ -2221,16 +2235,20 @@ function ygCreate(query){
   if (ygWidget) { try { ygWidget.destroy && ygWidget.destroy(); } catch(_){} ygWidget = null; }
 
   if (!ygYG) {
-    // Script not loaded yet — queue and load
     ygPendingQuery = query;
     if (!document.querySelector('script[src*="youglish"]')) {
       const s = document.createElement('script');
       s.src = 'https://youglish.com/api/1/youglish.js';
+      s.onerror = () => {
+        clearTimeout(ygLoadTimer);
+        document.getElementById('ygContainer').innerHTML = ygFallbackHtml(query);
+      };
       document.head.appendChild(s);
     }
     return;
   }
 
+  clearTimeout(ygLoadTimer);
   document.getElementById('ygContainer').innerHTML = '<div id="ygPlayer"></div>';
   try {
     ygWidget = new ygYG.Widget('ygPlayer', {
@@ -2238,26 +2256,27 @@ function ygCreate(query){
       components: 9,
       events: {
         onFetchDone: (e) => {
+          clearTimeout(ygLoadTimer);
           if (e.totalResult === 0) {
-            document.getElementById('ygContainer').innerHTML =
-              `<div class="yg-loading">找不到結果。<br><a href="https://youglish.com/pronounce/${encodeURIComponent(query)}/english" target="_blank" style="color:var(--accent)">在 YouGlish 開啟 ↗</a></div>`;
+            document.getElementById('ygContainer').innerHTML = ygFallbackHtml(query);
           }
         },
         onError: () => {
-          document.getElementById('ygContainer').innerHTML =
-            `<div class="yg-loading">載入失敗。<br><a href="https://youglish.com/pronounce/${encodeURIComponent(query)}/english" target="_blank" style="color:var(--accent)">在 YouGlish 開啟 ↗</a></div>`;
+          clearTimeout(ygLoadTimer);
+          document.getElementById('ygContainer').innerHTML = ygFallbackHtml(query);
         }
       }
     });
     ygWidget.search(query);
   } catch(e) {
-    document.getElementById('ygContainer').innerHTML =
-      `<div class="yg-loading">無法載入 YouGlish。<br><a href="https://youglish.com/pronounce/${encodeURIComponent(query)}/english" target="_blank" style="color:var(--accent)">在 YouGlish 開啟 ↗</a></div>`;
+    clearTimeout(ygLoadTimer);
+    document.getElementById('ygContainer').innerHTML = ygFallbackHtml(query);
   }
 }
 
 function closeYouGlish(e){
   if (e && e.target !== document.getElementById('ygModal')) return;
+  clearTimeout(ygLoadTimer);
   document.getElementById('ygModal').classList.remove('open');
   if (ygWidget) { try { ygWidget.destroy && ygWidget.destroy(); } catch(_){} ygWidget = null; }
   document.getElementById('ygContainer').innerHTML = '';
